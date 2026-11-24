@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 
 // Public web config (safe to ship; access is protected by App Check).
 const firebaseConfig = {
@@ -33,6 +33,6 @@ if (import.meta.env.DEV || debugToken) {
 }
 
 initializeAppCheck(firebaseApp, {
-  provider: new ReCaptchaV3Provider(siteKey || "debug-placeholder"),
+  provider: new ReCaptchaEnterpriseProvider(siteKey || "debug-placeholder"),
   isTokenAutoRefreshEnabled: true,
 });
