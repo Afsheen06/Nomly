@@ -206,6 +206,7 @@ select { background: #fff; color: var(--ink); border: 1.5px solid var(--line); b
 .mic:active { transform: scale(0.94); }
 .mic.listening { background: var(--raspberry); color: #fff; border-color: transparent; }
 .mic.listening::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 2px solid var(--raspberry); animation: ripple 1.2s infinite; }
+.cam { color: var(--raspberry); }
 .mic:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .primary {
@@ -266,3 +267,15 @@ select { background: #fff; color: var(--ink); border: 1.5px solid var(--line); b
   #splash { display: none; }
   .mascot, .bubble { opacity: 1 !important; }
 }
+
+/* ---------- Week ---------- */
+.week-card { padding-bottom: 14px; }
+.week-head { display: flex; align-items: baseline; justify-content: space-between; }
+.week-head h2 { margin: 0 0 10px; color: var(--ink); }
+.streak { font-size: 13px; font-weight: 700; color: var(--lime-deep); }
+.week { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; height: 120px; align-items: end; }
+.day { position: relative; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.day i { display: block; width: 100%; max-width: 28px; height: calc((100% - 22px) * var(--h, 0) / 100); min-height: 0; border-radius: 10px 10px 4px 4px; background: #f5c2cf; transition: height 800ms cubic-bezier(0.22, 1, 0.36, 1); }
+.day.today i { background: var(--guava); }
+.day.over i { background: var(--raspberry); }
+.day.today span { color: var(--ink); font-weight: 700; }

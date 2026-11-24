@@ -4,6 +4,8 @@
 
 - **On-device first:** when Chrome has Gemini Nano available, meal parsing runs privately on the device, free and offline-capable.
 - **Cloud fallback:** on devices without an on-device model (most phones, including mid-range Android), the same request goes to Gemini in the cloud automatically.
+- **Photo scan:** snap a plate and Gemini in the cloud estimates the foods and portions (image input isn't available on-device, so this always shows the Cloud badge).
+- **Weekly view and streak:** a 7-day calorie chart against your goal, plus a logging streak.
 - **Every logged meal shows which path ran** (On-device or Cloud badge), so the hybrid behaviour is visible.
 
 ## Value proposition

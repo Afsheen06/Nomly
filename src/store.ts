@@ -70,3 +70,42 @@ export function totals(entries: MealEntry[]) {
 export function entryCalories(e: MealEntry): number {
   return e.items.reduce((sum, i) => sum + i.calories, 0);
 }
+
+function dayKey(ts: number): string {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
+
+export interface DayTotal {
+  label: string;
+  calories: number;
+  isToday: boolean;
+}
+
+/** Calories per day for the last 7 days, oldest first. */
+export function lastSevenDays(entries: MealEntry[]): DayTotal[] {
+  const out: DayTotal[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = dayKey(d.getTime());
+    const calories = entries
+      .filter((e) => dayKey(e.ts) === key)
+      .reduce((sum, e) => sum + entryCalories(e), 0);
+    out.push({ label: d.toLocaleDateString(undefined, { weekday: "narrow" }), calories, isToday: i === 0 });
+  }
+  return out;
+}
+
+/** Consecutive days with at least one logged meal, counting back from today (or yesterday). */
+export function streak(entries: MealEntry[]): number {
+  const days = new Set(entries.map((e) => dayKey(e.ts)));
+  const d = new Date();
+  if (!days.has(dayKey(d.getTime()))) d.setDate(d.getDate() - 1);
+  let n = 0;
+  while (days.has(dayKey(d.getTime()))) {
+    n++;
+    d.setDate(d.getDate() - 1);
+  }
+  return n;
+}

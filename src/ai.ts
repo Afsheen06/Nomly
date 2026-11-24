@@ -145,3 +145,45 @@ export async function parseMeal(text: string): Promise<ParsedMeal> {
     return { items: parse(result.response.text()), source: "in_cloud" };
   }
 }
+
+/* ---------- Photo scan (cloud vision) ---------- */
+
+const PHOTO_PROMPT = `You are the photo food scanner inside Nomly, an app for everyday Indian eating.
+Look at the photo of a meal and return JSON: {"items":[...]} using the same fields as the text parser
+(name, quantity, calories, protein_g, carbs_g, fat_g).
+- One item per visible food or drink. Judge portion size from the plate, bowl, or hand if visible.
+- "quantity" is a short phrase such as "2 pieces" or "1 plate". Values are honest estimates.
+- If you are unsure of a dish, give your best guess in "name" with a typical home-style serving.
+- If the photo has no food, return {"items":[]}.`;
+
+const photoModel = getGenerativeModel(ai, {
+  mode: InferenceMode.ONLY_IN_CLOUD,
+  inCloudParams: {
+    model: CLOUD_MODEL,
+    systemInstruction: PHOTO_PROMPT,
+    generationConfig: { responseMimeType: "application/json", responseSchema: mealSchema },
+  },
+});
+
+/** Shrinks a phone photo before upload: faster, cheaper, and still plenty for food. */
+async function shrinkImage(file: File, maxSide = 1024): Promise<{ mimeType: string; data: string }> {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+  return { mimeType: "image/jpeg", data: dataUrl.split(",")[1] };
+}
+
+/** Scans a photo of a meal. Always runs in the cloud, because image input isn't available on-device. */
+export async function parsePhoto(file: File): Promise<ParsedMeal> {
+  const image = await shrinkImage(file);
+  const result = await photoModel.generateContent([
+    "Scan this meal photo.",
+    { type: "inlineData", inlineData: image },
+  ]);
+  return { items: parse(result.response.text()), source: "in_cloud" };
+}

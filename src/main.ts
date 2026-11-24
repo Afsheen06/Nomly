@@ -1,14 +1,16 @@
 import "./style.css";
-import { initOnDevice, parseMeal, type Source } from "./ai";
+import { initOnDevice, parseMeal, parsePhoto, type ParsedMeal, type Source } from "./ai";
 import { startListening, voiceSupported } from "./voice";
 import {
   addEntry,
   entryCalories,
   isToday,
+  lastSevenDays,
   loadEntries,
   loadGoal,
   removeEntry,
   saveGoal,
+  streak,
   totals,
   type MealEntry,
 } from "./store";
@@ -184,10 +186,33 @@ function renderList(entries: MealEntry[], newId?: string) {
   }
 }
 
+function renderWeek() {
+  const all = loadEntries();
+  const days = lastSevenDays(all);
+  const max = Math.max(goal, ...days.map((d) => d.calories), 1);
+  const week = $("week");
+  week.innerHTML = "";
+  week.style.setProperty("--goal", `${(goal / max) * 100}%`);
+  for (const d of days) {
+    const col = document.createElement("div");
+    col.className = "day" + (d.isToday ? " today" : "") + (d.calories > goal ? " over" : "");
+    col.title = `${d.calories} kcal`;
+    const bar = document.createElement("i");
+    bar.style.setProperty("--h", String(Math.max(d.calories ? 6 : 0, (d.calories / max) * 100)));
+    const lab = document.createElement("span");
+    lab.textContent = d.label;
+    col.append(bar, lab);
+    week.append(col);
+  }
+  const n = streak(all);
+  $("streak").textContent = n > 1 ? `${n}-day streak` : n === 1 ? "1 day logged" : "";
+}
+
 function refresh(newId?: string) {
   const today = loadEntries().filter((e) => isToday(e.ts));
   renderSummary(today);
   renderList(today, newId);
+  renderWeek();
 }
 
 /* ---------- Logging a meal ---------- */
@@ -195,13 +220,22 @@ function refresh(newId?: string) {
 async function logMeal() {
   const text = input.value.trim();
   if (!text || busy) return;
+  await runLog(text, () => parseMeal(text));
+}
+
+async function scanPhoto(file: File) {
+  if (busy) return;
+  await runLog("Photo scan", () => parsePhoto(file), "Looking at your plate...");
+}
+
+async function runLog(text: string, work: () => Promise<ParsedMeal>, thinking = "Understanding your meal...") {
   busy = true;
   logBtn.disabled = true;
   logBtn.classList.add("loading");
-  setStatus("Understanding your meal...");
-  setMood("thinking");
+  setStatus(thinking);
+  setMood("thinking", thinking);
   try {
-    const { items, source } = await parseMeal(text);
+    const { items, source } = await work();
     if (!items.length) {
       setStatus("I couldn't find any food in that. Try describing what you ate.", "error");
       setMood("oops", "I didn't spot any food in that.", 3000);
@@ -295,6 +329,17 @@ async function updateModeChip() {
         ? "On-device AI downloading"
         : "Cloud AI (no on-device model here)";
 }
+
+/* ---------- Photo ---------- */
+
+const camBtn = $<HTMLButtonElement>("camBtn");
+const photoInput = $<HTMLInputElement>("photoInput");
+camBtn.addEventListener("click", () => photoInput.click());
+photoInput.addEventListener("change", () => {
+  const file = photoInput.files?.[0];
+  photoInput.value = "";
+  if (file) void scanPhoto(file);
+});
 
 /* ---------- Wiring ---------- */
 
