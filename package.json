@@ -1,0 +1,20 @@
+{
+  "name": "nomly",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Nomly: voice-first Indian food logging with Firebase AI Logic hybrid (on-device + cloud) inference",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "firebase": "^13.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8"
+  }
+}
