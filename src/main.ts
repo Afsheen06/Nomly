@@ -246,7 +246,17 @@ async function runLog(text: string, work: () => Promise<ParsedMeal>, thinking = 
     input.value = "";
     refresh(entry.id);
     const kcal = entryCalories(entry);
-    setStatus(`Logged using ${source === "on_device" ? "on-device AI" : "cloud AI"}.`);
+    setStatus(`Logged using ${source === "on_device" ? "on-device AI" : "cloud AI"}. `);
+    const undo = document.createElement("button");
+    undo.type = "button";
+    undo.className = "undo";
+    undo.textContent = "Undo";
+    undo.addEventListener("click", () => {
+      removeEntry(entry.id);
+      refresh();
+      setStatus("Removed.");
+    });
+    statusEl.append(undo);
     setMood("happy", `Yum! ${kcal} kcal logged.`, 2600);
   } catch (err) {
     console.error(err);
@@ -334,7 +344,54 @@ async function updateModeChip() {
 
 const camBtn = $<HTMLButtonElement>("camBtn");
 const photoInput = $<HTMLInputElement>("photoInput");
-camBtn.addEventListener("click", () => photoInput.click());
+const camView = $("camView");
+const camVideo = $<HTMLVideoElement>("camVideo");
+let camStream: MediaStream | null = null;
+let facing: "environment" | "user" = "environment";
+
+async function openCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    photoInput.click();
+    return;
+  }
+  try {
+    camStream?.getTracks().forEach((t) => t.stop());
+    camStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facing }, width: { ideal: 1280 }, height: { ideal: 960 } },
+      audio: false,
+    });
+    camVideo.srcObject = camStream;
+    camView.hidden = false;
+  } catch {
+    photoInput.click(); // permission denied: fall back to the system camera / gallery picker
+  }
+}
+
+function closeCamera() {
+  camStream?.getTracks().forEach((t) => t.stop());
+  camStream = null;
+  camVideo.srcObject = null;
+  camView.hidden = true;
+}
+
+async function shoot() {
+  if (!camVideo.videoWidth) return;
+  const c = document.createElement("canvas");
+  c.width = camVideo.videoWidth;
+  c.height = camVideo.videoHeight;
+  c.getContext("2d")!.drawImage(camVideo, 0, 0);
+  const blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/jpeg", 0.9));
+  closeCamera();
+  if (blob) void scanPhoto(new File([blob], "meal.jpg", { type: "image/jpeg" }));
+}
+
+camBtn.addEventListener("click", () => void openCamera());
+$("camShot").addEventListener("click", () => void shoot());
+$("camClose").addEventListener("click", closeCamera);
+$("camFlip").addEventListener("click", () => {
+  facing = facing === "environment" ? "user" : "environment";
+  void openCamera();
+});
 photoInput.addEventListener("change", () => {
   const file = photoInput.files?.[0];
   photoInput.value = "";
